@@ -1,0 +1,33 @@
+DEPLOYMENT CHECKLIST — Eternal Family Archive
+===============================================
+
+1. BUILD VERIFICATION (all three must pass)
+   npm install
+   npm run build
+   npx tsc --noEmit
+
+2. ENVIRONMENT VARIABLES
+
+   Required:
+     VITE_SUPABASE_URL        = https://your-project-id.supabase.co
+     VITE_SUPABASE_ANON_KEY   = your-supabase-anon-public-key
+
+   Optional:
+     VITE_GEMINI_API_KEY      = your-google-gemini-api-key
+       (AI summary, research, portrait features show toast fallback if absent)
+
+   Local dev: cp .env.example .env.local  and fill in values.
+   Vercel:    add in Project Settings → Environment Variables.
+
+3. SUPABASE SETUP
+   a. Create a new Supabase project at https://app.supabase.com
+   b. Open SQL Editor → paste supabase/schema.sql → Run
+      (safe to run multiple times — fully idempotent)
+   c. Copy Project URL + anon key from Settings → API
+   d. (Optional) Disable email confirmation for faster local dev
+
+4. VERCEL DEPLOYMENT
+   a. Push repo to GitHub
+   b. Import into Vercel (auto-detects Vite)
+   c. Add env vars listed above
+   d. Deploy

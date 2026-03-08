@@ -1,0 +1,76 @@
+CHANGELOG — Production Deployment Prep (all rounds)
+=====================================================
+
+FILES CHANGED AND WHY
+---------------------
+
+1. vite-env.d.ts (CREATED)
+   - TypeScript declarations for import.meta.env
+   - Declares VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_GEMINI_API_KEY
+
+2. vite.config.ts
+   - Removed define block that shimmed process.env.API_KEY / process.env.GEMINI_API_KEY
+   - Removed loadEnv import and mode parameter
+   - Now a simple static defineConfig export
+
+3. .env.example
+   - GEMINI_API_KEY → VITE_GEMINI_API_KEY
+   - Added note that AI features are optional
+
+4. services/gemini.ts
+   - Replaced both process.env.API_KEY with import.meta.env.VITE_GEMINI_API_KEY
+   - Added getGeminiKey() helper that throws clear message if key is missing
+   - Moved GoogleGenAI init inside try/catch for graceful fallback
+   - Removed unused Type import from @google/genai
+
+5. App.tsx
+   - Replaced process.env.API_KEY in handleGeneratePortrait with import.meta.env.VITE_GEMINI_API_KEY
+   - Added early-return toast if key absent
+   - Added safe optional chaining on response.candidates?.[0]?.content?.parts
+
+6. components/ErrorBoundary.tsx  [tsc --noEmit fix]
+   - ROOT CAUSE: with useDefineForClassFields: false in tsconfig, a bare class field
+     declaration (state: State = ...) prevents TypeScript from resolving this.props
+     and this.state on the class instance.
+   - FIX: replaced class field with explicit constructor(props) + super(props) +
+     this.state assignment. Changed type aliases to interfaces for consistency.
+   - Result: this.props.children and this.state.error now fully recognized by tsc.
+
+7. components/circle/PostComposer.tsx  [tsc --noEmit fix]
+   - ROOT CAUSE: Array.from(e.target.files || []) produces a FileList | never[] union
+     that with @types/node v22 in scope causes TypeScript to infer element type as
+     unknown instead of File.
+   - FIX: separated null check from Array.from; fileList is narrowed to FileList before
+     Array.from is called; explicit File[] annotation on the result; explicit File
+     annotation on forEach callback parameter.
+   - Result: inferKind(file), file.name, file.size, reader.readAsDataURL(file) all
+     type-check correctly.
+
+8. hooks/useGedcomImport.ts
+   - Added type-only imports: Dispatch, SetStateAction, ChangeEvent from react
+   - Replaced bare React.Dispatch, React.SetStateAction, React.ChangeEvent
+
+9. hooks/useMediaAttach.ts
+   - Same as #8: added direct type imports from react
+
+10. hooks/useProfileEditor.ts
+    - Same pattern: added Dispatch, SetStateAction type imports
+
+11. src/lib/supabaseDb.ts
+    - Changed batchInsert<T extends Record<string, unknown>> to <T extends object>
+    - Added safe cast for Supabase insert call
+    - Row interfaces now pass without index-signature errors
+
+12. views/ProfileView.tsx
+    - RefObject<HTMLInputElement> → RefObject<HTMLInputElement | null>  (React 19 fix)
+
+13. views/FamilyCircleView.tsx
+    - Same RefObject fix as #12
+
+14. supabase/schema.sql
+    - Added DROP POLICY IF EXISTS before all 36 CREATE POLICY statements
+    - Added DROP TRIGGER IF EXISTS before both CREATE TRIGGER statements
+    - Schema is now fully rerunnable
+
+15. README.md
+    - GEMINI_API_KEY → VITE_GEMINI_API_KEY in local dev and Vercel sections
